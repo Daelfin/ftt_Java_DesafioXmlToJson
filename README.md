@@ -6,7 +6,8 @@ Desafio proposto pelo prof. Daniel de Souza Carvalho na disciplina de Compilador
 
 O programa irá converter um arquivo .xml para um arquivo .json
 
-A entrada deve ser no arquivo "Entrada.xml". O arquivo deve estar formatado de forma que cada linha possua apenas uma tag.  
+A entrada deve ser no arquivo "Entrada.xml". O arquivo deve estar formatado de forma que cada linha possua apenas uma tag.
+
 Exemplo:
 
 ```

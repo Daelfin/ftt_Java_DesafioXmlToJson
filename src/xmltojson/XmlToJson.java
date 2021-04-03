@@ -7,11 +7,11 @@ package xmltojson;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.ArrayList;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Scanner;
-import java.util.Stack;
 
 /**
  *
@@ -25,7 +25,7 @@ public class XmlToJson {
      */
     public static void main(String[] args) throws FileNotFoundException {
         File arquivo = new File("Entrada.xml");
-        Queue<String> linhas = new LinkedList<String>();
+        Queue<String> linhas = new LinkedList<>();
 
         if (arquivo.exists()) {
             try (Scanner scanner = new Scanner(arquivo)) {
@@ -34,22 +34,38 @@ public class XmlToJson {
                 }
             }
 
-            converteParaJson(linhas);
+            String Json = converteParaJson(linhas);
+            
+            try
+            {
+                arquivo = new File("Saida.json");
+                arquivo.createNewFile();
+                try (FileWriter escritor = new FileWriter("Saida.json")) {
+                    escritor.write(Json);
+                }
+                System.out.println("\nArquivo de saída criado!");
+            }
+            catch (IOException erro){
+                System.out.println("Ocorreu um erro!");                
+            }
 
         } else {
-            System.out.print("Arquivo de entrada não encontrado. O arquivo de"
-                    + "Entrada deve se chamar \'Entrada.xml\' e deve ser colocado"
-                    + "na pasta raiz do projeto. Garanta que seu arquivo esteja"
+            System.out.println("Arquivo de entrada não encontrado. O arquivo de "
+                    + "Entrada deve se chamar \'Entrada.xml\' e deve ser colocado "
+                    + "na pasta raiz do projeto. Garanta que seu arquivo esteja "
                     + "bem formatado.");
         }
     }
 
-    public static void converteParaJson(Queue<String> linhas) {
-        StringBuilder builder = new StringBuilder();
+    public static String converteParaJson(Queue<String> linhas) {
+        String retorno = "";
         boolean elementos = false;
-        
-        
-        builder.append("{");                                                    //Inicio de arquivo
+        boolean listando = false;
+        boolean anteriorAbreTag = false;
+        String tagAtual;
+        String tagAnterior = "";
+                
+        retorno += "{";
         
         while (!linhas.isEmpty()) {
             String linha = linhas.poll();
@@ -57,30 +73,49 @@ public class XmlToJson {
             if (linha.contains("<")) {
                 //Tem abre e fecha tag
                 if(elementos){
-                    builder.append(",");
+                    retorno += ",";
                 }
-                builder.append(System.lineSeparator());
+                retorno += System.lineSeparator();
                 elementos = true;
-                builder.append("\"");
-                builder.append(linha.substring(0, linha.indexOf('>')));
-                builder.append("\": \"");
-                builder.append(linha.substring(linha.indexOf('>') + 1, linha.indexOf('<')));
-                builder.append("\"");
+                retorno += "\"" + linha.substring(0, linha.indexOf('>')) + "\": \"" + 
+                        linha.substring(linha.indexOf('>') + 1, linha.indexOf('<')) + 
+                        "\"";
+                anteriorAbreTag = false;
             } else if (linha.contains("/")) {
                 //É um fecha tag
                 elementos = false;
-                builder.append(System.lineSeparator());
-                builder.append("}");
+                tagAtual = linha.substring(1, linha.length() - 1);
+                if (listando && !tagAnterior.equals(tagAtual)){
+                    retorno += System.lineSeparator() + "]";
+                    listando = false;
+                }
+                retorno += System.lineSeparator() + "}";
+                anteriorAbreTag = false;
             } else {
                 //É um abre tag
-                elementos = false;
-                builder.append(System.lineSeparator());
-                builder.append("\"");
-                builder.append(linha.substring(0, linha.length() - 1));
-                builder.append("\": {");
+                elementos = false;                
+                tagAtual = linha.substring(0, linha.length() - 1);
+                if (tagAnterior.equals(tagAtual)){
+                    retorno += "," + System.lineSeparator() + "{";
+                }
+                else {
+                    if(!tagAnterior.equals("") && anteriorAbreTag){
+                        int indice = retorno.lastIndexOf(tagAnterior) + tagAnterior.length() + 2;
+                        retorno = retorno.substring(0, indice) + retorno.substring(indice + 2);
+                        listando = false;
+                    }
+                    if (listando){
+                        retorno += System.lineSeparator() + "]";
+                    }
+                    retorno += System.lineSeparator() + "\"" + tagAtual + "\": [ {";
+                    listando = true;
+                }
+                tagAnterior = tagAtual;
+                anteriorAbreTag = true;
             }
         }
-        builder.append(System.lineSeparator());
-        builder.append("}"); 
+        retorno += System.lineSeparator() + "}";
+        
+        return retorno;
     }
 }
